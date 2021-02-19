@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, current_app, after_this_request
+from flask import Flask, render_template, request, jsonify, send_file, current_app, after_this_request,flash
 import urllib.request
 from bs4 import BeautifulSoup
 from pytube import YouTube
@@ -8,6 +8,8 @@ import json
 import io
 
 app = Flask(__name__)
+
+app.secret_key = 'random string'
 mp3 = ''
 @app.route("/")
 def index():
@@ -44,13 +46,18 @@ def dwnld():
                 audio_clip.close()
                 video.close()
                 os.remove(mp4)
+                return_data = io.BytesIO()
+                with open(mp3, 'rb') as fo:
+                    return_data.write(fo.read())
+                return_data.seek(0)
+                os.remove(mp3)
+                return send_file(return_data, mimetype='audio/mpeg',
+                                attachment_filename=song_name+'.mp3',as_attachment=True)
                 break
-    return_data = io.BytesIO()
-    with open(mp3, 'rb') as fo:
-        return_data.write(fo.read())
-    return_data.seek(0)
-    os.remove(mp3)
-    return send_file(return_data, mimetype='audio/mpeg',
-                     attachment_filename=song_name+'.mp3',as_attachment=True)
+    msg="No song found! Please provide more info to search"
+    flash(msg)
+    return render_template("index.html")
+
+
 if __name__ == "__main__":
     app.run()
